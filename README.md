@@ -91,7 +91,49 @@
 Что касается нейминга кастомных элементов, то единственным требованием для этого, согласно спецификации, является использование дефиса (-) для обеспечения совместимости с новыми HTML тегами, которые появятся в будущем.
 В следующих примерах используется формат `[цвет_команды]-[фичи]`. Присутствие в названии элемента имени команды защищает от возможных конфликтов, а также дает возможность понять, кто за что отвечает, просто взглянув на DOM.
 
+### Взаимодействие родитель-дочерний элемент / манипуляции с DOMом. ###
+Когда пользователь выбирает другую модель трактора, кнопка покупки должна соответствующим образом обновиться. Для этого команда Product может просто удалить существующий элемент из DOMа и добавить новый.
 
+    container.innerHTML;
+    // => <blue-buy sku="t_porsche">...</blue-buy>
+    container.innerHTML = '<blue-buy sku="t_fendt"></blue-buy>';
 
+Метод `disconnectedCallback` вызывается синхронно перед удалением старого элемента для того, чтобы за ним подчистить, например удалить обработчики событий. Затем вызывается метод `connectedCallback` только что созданного `t_fendt` элемента.
 
+Другой способ, более эффективный с точки зрения производительности, заключается в обновления только sku атрибута существующего элемента (stock keeping unit - идентификатор товарной позиции).
+
+    document.querySelector('blue-buy').setAttribute('sku', 't_fendt');
+
+Если команда Product использовала бы какой-нибудь шаблонный движок, обновляющий DOM, наподобие React, то следующее будет происходить автоматически:
+
+![custom-element-attribute](https://github.com/Pashua85/microfrontends/raw/master/assets/custom-element-attribute.gif)
+
+В нашем же кастомном элементе это будет реализовано с помощью `attributeChangedCallback` и определения списка `observedAttributes`, для которых этот коллбэк будет вызываться.
+
+    const prices = {
+      t_porsche: '66,00 €',
+      t_fendt: '54,00 €',
+      t_eicher: '58,00 €',
+    };
+
+    class BlueBuy extends HTMLElement {
+      static get observedAttributes() {
+        return ['sku'];
+      }
+      connectedCallback() {
+        this.render();
+      }
+      render() {
+        const sku = this.getAttribute('sku');
+        const price = prices[sku];
+        this.innerHTML = `<button type="button">buy for ${price}</button>`;
+      }
+      attributeChangedCallback(attr, oldValue, newValue) {
+        this.render();
+      }
+      disconnectedCallback() {...}
+    }
+    window.customElements.define('blue-buy', BlueBuy);
+
+Для избежания дублирования логики создан отдельный метод `render()`, который вызывается и из `connectedCallback`, и из `attributeChangedCallback`. Этот метод получает необходимые данные и определяет новую разметку. Если бы решено было использовать более сложный шаблонный движок или какой-нибудь фреймворк, то включать его в код нужно было бы именно в этом месте.
 
