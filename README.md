@@ -11,4 +11,8 @@
 
 Впрочем, эта идея не нова. Они имеет много общего с концепцией [автономных систем](https://scs-architecture.org/)(Self-contained Systems). Раньше аналогичный подход уже появлялся под названием [“клиентская интеграция для вертикализированных систем”](https://www.otto.de/jobs/technology/techblog/artikel/scaling-with-microservices-and-vertical-decomposition_2014-07-29.php) (Frontend Integration for Verticalised Systems). Однако термин микрофронтенды менее громоздкий и гораздо дружелюбней.
 
-![Image alt](https://github.com/Pashua85/microfrontends/raw/master/images/monolith-frontback-microservices.png)
+Монолитные фронтенды
+![monolith-frontback-microservices](https://github.com/Pashua85/microfrontends/raw/master/images/monolith-frontback-microservices.png)
+
+Организация по вертикали
+![verticals-headline](https://github.com/Pashua85/microfrontends/raw/master/images/verticals-headline.png)
