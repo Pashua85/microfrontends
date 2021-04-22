@@ -65,7 +65,7 @@
 
 В следующем примере, страница уже поделена на отдельные компоненты, которые разрабатывают три разные команды. Команда Checkout (синие) ответственна для всё, что связано с процессом покупки - собственно кнопка покупки и мини-корзина. Команда Inspire (зеленые) управляет блоком рекомендаций товаров на странице. Сама же страница разрабатывается командой Product (красные).
 
-![tractor-red](https://github.com/Pashua85/microfrontends/raw/master/assets/tractor-red.jpeg)
+![three-teams](https://github.com/Pashua85/microfrontends/raw/master/assets/three-teams.png)
 
 [посмотрите, как это работает в браузере](https://micro-frontends.org/1-composition-client-only/) и [загляните в код](https://github.com/neuland/micro-frontends/tree/master/1-composition-client-only)
 
