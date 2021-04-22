@@ -57,6 +57,10 @@
 
 ![model-store-0](https://github.com/Pashua85/microfrontends/raw/master/assets/model-store-0.gif)
 
+[посмотрите, как это работает в браузере](https://micro-frontends.org/0-model-store/) и [загляните в код](https://github.com/neuland/micro-frontends/tree/master/0-model-store)
+
+Вся разметка генерируется на клиенте на основе ванильного JS, без каких-либо зависимостей. В коде работа с состоянием отделена от генерации разметки, весь HTML заново перерисовывается каждый раз при изменении состояния - пока никаких затейливых манипуляций с DOM или universal-рендеринга нет. Также отсутствует еще разделение  зон ответственности в работе над приложение между командами - весь [код](https://github.com/neuland/micro-frontends/tree/master/0-model-store) написан в одном файле.
+
 
 
 
