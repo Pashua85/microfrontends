@@ -170,3 +170,29 @@
         this.firstChild.removeEventListener('click', this.addToCart);
       }
     }
+
+Мини-корзина теперь может подписаться на это событие на `window`и получать уведомления всякий раз, когда ей нужно обновить свои данные.
+
+    class BlueBasket extends HTMLElement {
+      connectedCallback() {
+        [...]
+        window.addEventListener('blue:basket:changed', this.refresh);
+      }
+      refresh() {
+        // fetch new data and render it
+      }
+      disconnectedCallback() {
+        window.removeEventListener('blue:basket:changed', this.refresh);
+      }
+    }
+
+При этом мини-корзина добавляет обработчик события на тот элемент DOM, который находится вне её (`window`). Это вполне будет хорошо работать в большинстве приложений, но если вам этот подход некомфортен, то можете использовать другой -  пусть сама страница (команда Product) слушает событие и вызывает метод `refresh` у DOM элемента корзины.
+
+    // page.js
+    const $ = document.getElementsByTagName;
+
+    $('blue-buy')[0].addEventListener('blue:basket:changed', function() {
+      $('blue-basket')[0].refresh();
+    });
+
+Вызов методов у DOM элементов соответствует императивному стилю программирования и довольно редко применяется, однако его можно встретить, например, в [video element api](https://developer.mozilla.org/de/docs/Web/HTML/Using_HTML5_audio_and_video#Controlling_media_playback). Если возможно придерживаться декладекларотивного стиля (изменение атрибутов) - то лучше придерживаться его.
