@@ -74,15 +74,16 @@
 ### Как создать кастомный элемент? ###
 Возьмем для примера кнопку покупки. Команда Product использует её, просто добавляя `<blue-buy sku="t_porsche"></blue-buy>` в нужное место в разметке. Для того, чтобы это работало, нужно, чтобы команда Checkout зарегистрировала
 элемент `blue-buy` на странице.
+```js
+class BlueBuy extends HTMLElement {
+  connectedCallback() {
+    this.innerHTML = `<button type="button">buy for 66,00 €</button>`;
+  }
 
-    class BlueBuy extends HTMLElement {
-      connectedCallback() {
-        this.innerHTML = `<button type="button">buy for 66,00 €</button>`;
-      }
-
-      disconnectedCallback() { ... }
-    }
-    window.customElements.define('blue-buy', BlueBuy);
+  disconnectedCallback() { ... }
+}
+window.customElements.define('blue-buy', BlueBuy);
+```
 
 Каждый раз, когда браузеру при отрисовке разметки попадается тег `<blue-buy>`, вызывается метод `connectedCallback`. `this` ссылается на корневой DOM-узел кастомного элемента. Также можно использовать все свойства и методы стандартного DOM-элемента, например `innerHeight` или `getAttribute()`.
 
@@ -95,9 +96,11 @@
 ### Взаимодействие родитель - дочерний элемент / манипуляции с DOMом. ###
 Когда пользователь выбирает другую модель трактора, кнопка покупки должна соответствующим образом обновиться. Для этого команда Product может просто удалить существующий элемент из DOMа и добавить новый.
 
-    container.innerHTML;
-    // => <blue-buy sku="t_porsche">...</blue-buy>
-    container.innerHTML = '<blue-buy sku="t_fendt"></blue-buy>';
+```js
+container.innerHTML;
+// => <blue-buy sku="t_porsche">...</blue-buy>
+container.innerHTML = '<blue-buy sku="t_fendt"></blue-buy>';
+```
 
 Метод `disconnectedCallback` вызывается синхронно перед удалением старого элемента для того, чтобы за ним подчистить, например удалить обработчики событий. Затем вызывается метод `connectedCallback` только что созданного `t_fendt` элемента.
 
@@ -111,30 +114,32 @@
 
 В нашем же кастомном элементе это будет реализовано с помощью `attributeChangedCallback` и определения списка `observedAttributes`, для которых этот коллбэк будет вызываться.
 
-    const prices = {
-      t_porsche: '66,00 €',
-      t_fendt: '54,00 €',
-      t_eicher: '58,00 €',
-    };
+```js
+const prices = {
+  t_porsche: '66,00 €',
+  t_fendt: '54,00 €',
+  t_eicher: '58,00 €',
+};
 
-    class BlueBuy extends HTMLElement {
-      static get observedAttributes() {
-        return ['sku'];
-      }
-      connectedCallback() {
-        this.render();
-      }
-      render() {
-        const sku = this.getAttribute('sku');
-        const price = prices[sku];
-        this.innerHTML = `<button type="button">buy for ${price}</button>`;
-      }
-      attributeChangedCallback(attr, oldValue, newValue) {
-        this.render();
-      }
-      disconnectedCallback() {...}
-    }
-    window.customElements.define('blue-buy', BlueBuy);
+class BlueBuy extends HTMLElement {
+  static get observedAttributes() {
+    return ['sku'];
+  }
+  connectedCallback() {
+    this.render();
+  }
+  render() {
+    const sku = this.getAttribute('sku');
+    const price = prices[sku];
+    this.innerHTML = `<button type="button">buy for ${price}</button>`;
+  }
+  attributeChangedCallback(attr, oldValue, newValue) {
+    this.render();
+  }
+  disconnectedCallback() {...}
+}
+window.customElements.define('blue-buy', BlueBuy);
+```
 
 Для избежания дублирования логики создан отдельный метод `render()`, который вызывается и из `connectedCallback`, и из `attributeChangedCallback`. Этот метод получает необходимые данные и определяет новую разметку. Если бы решено было использовать более сложный шаблонный движок или какой-нибудь фреймворк, то включать его в код нужно было бы именно в этом месте.
 
@@ -151,50 +156,56 @@
 
 Более чистым способом реализации будет использование паттерна Издатель-Подписчик, при котором один компонент может отправлять сообщения, а другие компоненты могут подписаться на их получение. К счастью, в браузерах все для этого есть. Именно благодаря этому мы работаем с событиями вроде `click`, `select` или `mouseOver`. Помимо нативных событий можно ещё создать кастомные события с помощью `new CustomEvent(...)`. События всегда связаны с тем DOM узлом, где они возникли. Большинство нативных событий также подразумевает всплытие. Это дает возможность слушать все события на определенной ветке DOM дерева. Если вам нужно реагировать на все события на странице, добавьте обработчик событий на объект window. Вот как создание события `blue:basket:changed` выглядит в примере:
 
-    class BlueBuy extends HTMLElement {
-      [...]
-      connectedCallback() {
-        [...]
-        this.render();
-        this.firstChild.addEventListener('click', this.addToCart);
-      }
-      addToCart() {
-        // maybe talk to an api
-        this.dispatchEvent(new CustomEvent('blue:basket:changed', {
-          bubbles: true,
-        }));
-      }
-      render() {
-        this.innerHTML = `<button type="button">buy</button>`;
-      }
-      disconnectedCallback() {
-        this.firstChild.removeEventListener('click', this.addToCart);
-      }
-    }
+```js
+class BlueBuy extends HTMLElement {
+  [...]
+  connectedCallback() {
+    [...]
+    this.render();
+    this.firstChild.addEventListener('click', this.addToCart);
+  }
+  addToCart() {
+    // maybe talk to an api
+    this.dispatchEvent(new CustomEvent('blue:basket:changed', {
+      bubbles: true,
+    }));
+  }
+  render() {
+    this.innerHTML = `<button type="button">buy</button>`;
+  }
+  disconnectedCallback() {
+    this.firstChild.removeEventListener('click', this.addToCart);
+  }
+}
+```
 
 Мини-корзина теперь может подписаться на это событие на `window`и получать уведомления всякий раз, когда ей нужно обновить свои данные.
 
-    class BlueBasket extends HTMLElement {
-      connectedCallback() {
-        [...]
-        window.addEventListener('blue:basket:changed', this.refresh);
-      }
-      refresh() {
-        // fetch new data and render it
-      }
-      disconnectedCallback() {
-        window.removeEventListener('blue:basket:changed', this.refresh);
-      }
-    }
+```js
+class BlueBasket extends HTMLElement {
+  connectedCallback() {
+    [...]
+    window.addEventListener('blue:basket:changed', this.refresh);
+  }
+  refresh() {
+    // fetch new data and render it
+  }
+  disconnectedCallback() {
+    window.removeEventListener('blue:basket:changed', this.refresh);
+  }
+}
+```
 
 При этом мини-корзина добавляет обработчик события на тот элемент DOM, который находится вне её (`window`). Это вполне будет хорошо работать в большинстве приложений, но если вам этот подход некомфортен, то можете использовать другой -  пусть сама страница (команда Product) слушает событие и вызывает метод `refresh` у DOM элемента корзины.
 
-    // page.js
-    const $ = document.getElementsByTagName;
+```js
+// page.js
+const $ = document.getElementsByTagName;
 
-    $('blue-buy')[0].addEventListener('blue:basket:changed', function() {
-      $('blue-basket')[0].refresh();
-    });
+$('blue-buy')[0].addEventListener('blue:basket:changed', function() {
+  $('blue-basket')[0].refresh();
+});
+```
 
 Вызов методов у DOM элементов соответствует императивному стилю программирования и довольно редко применяется, однако его можно встретить, например, в [video element api](https://developer.mozilla.org/de/docs/Web/HTML/Using_HTML5_audio_and_video#Controlling_media_playback). Если возможно придерживаться декладекларотивного стиля (изменение атрибутов) - то лучше придерживаться его.
 
@@ -205,16 +216,20 @@
 ### Custom Elements + Server Side Includes = ❤️
 Для того, чтобы рендеринг на стороне сервера заработал, нужно отрефакторить предыдущий пример. У каждой команды есть свой express сервер и метод `render()` кастомного элемента также доступен через url
 
-    $ curl http://127.0.0.1:3000/blue-buy?sku=t_porsche
-    <button type="button">buy for 66,00 €</button>
+```js
+$ curl http://127.0.0.1:3000/blue-buy?sku=t_porsche
+<button type="button">buy for 66,00 €</button>
+```
 
 Название кастомного элемента используется в качестве названия пути - атрибуты становятся параметрами запроса. Теперь становится возможным рендерить на сервере контент каждого компонента. В комбинации с тегом `<blue-buy>` достигается что-то близкое к Universal Web Component:
 
-    <blue-buy sku="t_porsche">
-      <!--#include virtual="/blue-buy?sku=t_porsche" -->
-    </blue-buy>
+```js
+<blue-buy sku="t_porsche">
+  <!--#include virtual="/blue-buy?sku=t_porsche" -->
+</blue-buy>
+```
 
-`#includes`-комментарий является частью  [Server Side Includes](https://en.wikipedia.org/wiki/Server_Side_Includes), фичи, которая доступна на большинстве веб-серверов. И да, это та самая техника, которая давным-давно использовалась для того, чтобы вставить актуальную дату на ваш сайт. Существуют и альтернативные способы, вроде [ESI](https://en.wikipedia.org/wiki/Edge_Side_Includes), [nodesi](https://github.com/Schibsted-Tech-Polska/nodesi), [compoxure](https://github.com/tes/compoxure) или [taylor](https://github.com/zalando/tailor), но для наших проектов SSI зарекомендовал себя как простое и чрезвычайно стабильное решение.
+`#include`-комментарий является частью  [Server Side Includes](https://en.wikipedia.org/wiki/Server_Side_Includes), фичи, которая доступна на большинстве веб-серверов. И да, это та самая техника, которая давным-давно использовалась для того, чтобы вставить актуальную дату на ваш сайт. Существуют и альтернативные способы, вроде [ESI](https://en.wikipedia.org/wiki/Edge_Side_Includes), [nodesi](https://github.com/Schibsted-Tech-Polska/nodesi), [compoxure](https://github.com/tes/compoxure) или [taylor](https://github.com/zalando/tailor), но для наших проектов SSI зарекомендовал себя как простое и чрезвычайно стабильное решение.
 
 Комментарий c `#include` перед тем, как сервер отправит всю страницу на клиент, заменяется на ответ на запрос `/blue-buy?sku=t_porsche`. Конфигурация nginx выглядит так:
 
@@ -276,14 +291,17 @@ Docker стартанет с nginx на порте 3000 и создаст nodejs
 Одно из решений может заключаться в том, что команда красных просто уберет SSI Include.
 
 До
-
-    <green-recos sku="t_porsche">
-      <!--#include virtual="/green-recos?sku=t_porsche" -->
-    </green-recos>
+```js
+<green-recos sku="t_porsche">
+  <!--#include virtual="/green-recos?sku=t_porsche" -->
+</green-recos>
+```
 
 После
 
-    <green-recos sku="t_porsche"></green-recos>
+```js
+<green-recos sku="t_porsche"></green-recos>
+```
 
 *Важное примечание*: кастомные элементы [не могут быть самозакрывающимися](https://developers.google.com/web/fundamentals/web-components/customelements#jsapi), поэтому использование `<green-recos sku=”t_porsche” />` не будет корректно работать.
 
